@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    
+    <script src='./dist/bundle.js'></script>
 </head>
 
 <body>
@@ -36,6 +36,7 @@
     
         <a href="https://github.com/webrtc/samples/tree/gh-pages/src/content/devices/input-output"
            title="View source for this page on GitHub" id="viewSource">View source on GitHub</a>
+           <button onclick="switchCamera()">switch camera</button>
     </div>
 </body>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
@@ -57,6 +58,20 @@ const videoSelect = document.querySelector('select#videoSource');
 const selectors = [audioInputSelect, audioOutputSelect, videoSelect];
 
 audioOutputSelect.disabled = !('sinkId' in HTMLMediaElement.prototype);
+let cameraList = [];
+let i=0;
+function switchCamera(){
+    if(i>=cameraList.length){
+        i=0 ;
+    }
+    const deviceId = cameraList[i].deviceId;
+    startVideo({
+        deviceId:{
+            exact: deviceId
+        }
+    });
+    i++;
+}
 
 function gotDevices(deviceInfos) {
   // Handles being called several times to update labels. Preserve values.
@@ -79,6 +94,7 @@ function gotDevices(deviceInfos) {
     } else if (deviceInfo.kind === 'videoinput') {
       option.text = deviceInfo.label || `camera ${videoSelect.length + 1}`;
       videoSelect.appendChild(option);
+      cameraList.push(deviceInfo);
     } else {
       console.log('Some other kind of source/device: ', deviceInfo);
     }
@@ -138,8 +154,23 @@ function start() {
   const audioSource = audioInputSelect.value;
   const videoSource = videoSelect.value;
   const constraints = {
-    audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
-    video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+    audio: false,
+    video: true,
+  };
+  navigator.mediaDevices.getUserMedia(constraints).then(gotStream).then(gotDevices).catch(handleError);
+}
+
+function startVideo(videoPara){
+    if (window.stream) {
+    window.stream.getTracks().forEach(track => {
+      track.stop();
+    });
+  }
+  const audioSource = audioInputSelect.value;
+  const videoSource = videoSelect.value;
+  const constraints = {
+    audio: false,
+    video: videoPara,
   };
   navigator.mediaDevices.getUserMedia(constraints).then(gotStream).then(gotDevices).catch(handleError);
 }
